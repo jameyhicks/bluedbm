@@ -36,7 +36,7 @@ int wnumBytes = (1 << (10 +4))*WRITE_BUFFER_WAYS; //16KB buffer, to be safe
 size_t ralloc_sz = rnumBytes*sizeof(unsigned char);
 size_t walloc_sz = wnumBytes*sizeof(unsigned char);
 
-char* log_prefix = "\t\tLOG: ";
+const char* log_prefix = "\t\tLOG: ";
 
 GeneralRequestProxy *device = 0;
 GeneralIndication *deviceIndication = 0;
@@ -49,12 +49,12 @@ double timespec_diff_sec( timespec start, timespec end ) {
 
 
 void interface_init() {
-	device = new GeneralRequestProxy(IfcNames_GeneralRequest);
-	deviceIndication = new GeneralIndication(IfcNames_GeneralIndication);
+	device = new GeneralRequestProxy(GeneralRequestPortal);
+	deviceIndication = new GeneralIndication(GeneralIndicationPortal);
 	
 	for ( int i = 0; i < DMA_BUFFER_COUNT; i++ ) {
-		srcAllocs[i] = portalAlloc(walloc_sz);
-		dstAllocs[i] = portalAlloc(ralloc_sz);
+		srcAllocs[i] = portalAlloc(walloc_sz, 1);
+		dstAllocs[i] = portalAlloc(ralloc_sz, 1);
 		srcBuffers[i] = (unsigned int *)portalMmap(srcAllocs[i], walloc_sz);
 		dstBuffers[i] = (unsigned int *)portalMmap(dstAllocs[i], ralloc_sz);
 	}
@@ -65,8 +65,8 @@ void interface_init() {
 
 void interface_alloc(DmaManager* dma) {
 	for ( int i = 0; i < DMA_BUFFER_COUNT; i++ ) {
-		portalDCacheFlushInval(srcAllocs[i], walloc_sz, srcBuffers[i]);
-		portalDCacheFlushInval(dstAllocs[i], ralloc_sz, dstBuffers[i]);
+		portalCacheFlush(srcAllocs[i], srcBuffers[i], walloc_sz, 1);
+		portalCacheFlush(dstAllocs[i], dstBuffers[i], ralloc_sz, 1);
 		ref_srcAllocs[i] = dma->reference(srcAllocs[i]);
 		ref_dstAllocs[i] = dma->reference(dstAllocs[i]);
 	}
