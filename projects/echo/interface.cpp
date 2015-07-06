@@ -63,34 +63,6 @@ void interface_init() {
 	pthread_cond_init(&flashReqCond, NULL);
 }
 
-void interface_alloc(DmaManager* dma) {
-	for ( int i = 0; i < DMA_BUFFER_COUNT; i++ ) {
-		portalCacheFlush(srcAllocs[i], srcBuffers[i], walloc_sz, 1);
-		portalCacheFlush(dstAllocs[i], dstBuffers[i], ralloc_sz, 1);
-		ref_srcAllocs[i] = dma->reference(srcAllocs[i]);
-		ref_dstAllocs[i] = dma->reference(dstAllocs[i]);
-	}
-	
-	for ( int i = 0; i < DMA_BUFFER_COUNT; i++ ) {
-		for ( int j = 0; j < WRITE_BUFFER_WAYS; j++ ) {
-			int idx = i*WRITE_BUFFER_WAYS+j;
-
-			int offset = j*1024*16;
-//			device->addWriteHostBuffer(ref_srcAllocs[i], offset, idx);
-			writeBuffers[idx] = srcBuffers[i] + (offset/sizeof(unsigned int));
-		}
-	}
-	for ( int i = 0; i < DMA_BUFFER_COUNT; i++ ) {
-		for ( int j = 0; j < READ_BUFFER_WAYS; j++ ) {
-			int idx = i*READ_BUFFER_WAYS+j;
-
-			int offset = j*1024*16;
-//			device->addReadHostBuffer(ref_dstAllocs[i], offset, idx);
-			readBuffers[idx] = dstBuffers[i] + (offset/sizeof(unsigned int));
-		}
-	}
-}
-
 void setAuroraRouting2(int myid, int src, int dst, int port1, int port2) {
 	if ( myid != src ) return;
 

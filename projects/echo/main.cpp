@@ -66,22 +66,7 @@ int main(int argc, const char **argv)
 	  myid = strtoul(userhostid, NULL, 0);
 	}
 
-	MemServerRequestProxy *hostMemServerRequest = new MemServerRequestProxy(HostMemServerRequestPortal);
-	MMURequestProxy *dmap = new MMURequestProxy(HostMMURequestPortal);
-	DmaManager *dma = new DmaManager(dmap);
-	MemServerIndication hostMemServerIndication(hostMemServerRequest, HostMemServerIndicationPortal);
-	MMUIndication hostMMUIndication(dma, HostMMUIndicationPortal);
-
-
-	fprintf(stderr, "Main::allocating memory...\n");
-	
-	interface_init();
-
 	printf( "Done initializing hw interfaces\n" ); fflush(stdout);
-
-	interface_alloc(dma);
-	
-	printf( "Done allocating DMA buffers\n" ); fflush(stdout);
 
 	printf( "initializing aurora with node id %ld\n", myid ); fflush(stdout);
 	auroraifc_start(myid);
