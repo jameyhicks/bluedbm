@@ -53,6 +53,7 @@ endinterface
 interface GeneralIndication;
    method Action readPage(Bit#(64) addr, Bit#(32) dstnod, Bit#(32) datasource);
    method Action recvSketch(Bit#(32) sketch, Bit#(32) latency);
+   method Action receive(Bit#(64) payload, Bit#(8) src);
    method Action hexDump(Bit#(32) hex);
    method Action mismatch(Bit#(32) hex, Bit#(32) hex2);
    method Action timeDiffDump(Bit#(32) diff, Bit#(32) ttype);
@@ -92,63 +93,45 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
    GtxClockImportIfc gtx_clk_119 <- mkGtxClockImport;
    AuroraExtIfc auroraExt119 <- mkAuroraExt(gtx_clk_119.gtx_clk_p_ifc, gtx_clk_119.gtx_clk_n_ifc, clk50);
 
-   AuroraExtArbiterBarIfc auroraExtArbiter <- mkAuroraExtArbiterBar(auroraExt119.user, auroraList);
+   //AuroraExtArbiterBarIfc auroraExtArbiter <- mkAuroraExtArbiterBar(auroraExt119.user, auroraList);
 
    Reg#(Bit#(32)) latencyCounter <- mkReg(0);
    rule incLatencyCounter;
       latencyCounter <= latencyCounter + 1;
    endrule
 
-   Reg#(Bit#(32)) sendDataCount <- mkReg(0);
-   Reg#(Bit#(32)) sendDataCount2 <- mkReg(0);
+   Vector#(4, Reg#(Bit#(32))) sendDataCount <- replicateM(mkReg(0));
+   Vector#(4, Reg#(Bit#(32))) sendDataCount2 <- replicateM(mkReg(0));
    Reg#(HeaderField) sendDataTarget <- mkReg(0);
-   Reg#(Bit#(32)) sendDataStride <- mkReg(0);
-   Reg#(Bit#(32)) sendDataStrideCount <- mkReg(0);
-   rule sendAuroraData2(sendDataCount2 > 0 );
-      sendDataCount2 <= sendDataCount2 - 1;
-      aend2.user.send(zeroExtend({sendDataCount2,8'hcc}), sendDataTarget);
-   endrule
-   rule sendAuroraData(sendDataCount > 0 );
-      if ( sendDataStrideCount > 0 ) begin
-	 sendDataStrideCount <= sendDataStrideCount - 1;
-      end
-      else begin
-	 sendDataStrideCount <= sendDataStride;
+   for (Integer link = 0; link < 4; link = link + 1)
+      rule sendAuroraData2 if (sendDataCount2[link] > 0 );
+	 sendDataCount2[link] <= sendDataCount2[link] - 1;
+	 let ptype = 0;
+	 if (myNetIdx == 1)
+	    ptype = 3;
+	 auroraExt119.user[link].send(AuroraPacket { payload: zeroExtend({sendDataCount2[link],8'hcc}), dst: sendDataTarget, src: myNetIdx, ptype: fromInteger(link)});
+      endrule
+   for (Integer link = 0; link < 4; link = link + 1)
+      rule sendAuroraData if(sendDataCount[link] > 0 );
+	 sendDataCount[link] <= sendDataCount[link] - 1;
+	 let ptype = 0;
+	 if (myNetIdx == 1)
+	    ptype = 2;
+	 auroraExt119.user[link].send(AuroraPacket { payload: zeroExtend({sendDataCount[link],8'hbb}), dst: sendDataTarget, src: myNetIdx, ptype: fromInteger(link)});
+      endrule
 
-	 sendDataCount <= sendDataCount - 1;
+   for (Integer link = 0; link < 4; link = link + 1) begin
+      Reg#(Bit#(32)) recvDataCount <- mkReg(0);
+      rule recvAuroraData;
+	 recvDataCount <= recvDataCount + 1;
 
-	 aend1.user.send(zeroExtend(sendDataCount), sendDataTarget);
-	 //auroraExt119.user[0].send(AuroraPacket{src:0, dst:0, ptype:1, payload: zeroExtend(sendDataCount)});
-	 //auroraExt119.user[1].send(AuroraPacket{src:2, dst:2, ptype:4, payload: zeroExtend(sendDataCount)});
-      end
-   endrule
+	 let rst <- auroraExt119.user[link].receive;
+	 let data = rst.payload;
+	 let src = rst.src;
 
-   Reg#(Bit#(32)) lastDataIn1 <- mkReg(0);
-   Reg#(Bit#(32)) recvDataCount <- mkReg(0);
-   rule recvAuroraData;
-      recvDataCount <= recvDataCount + 1;
-
-      let rst <- aend1.user.receive;
-      //let rst2 <- aend2.user.receive;
-      let data = tpl_1(rst);
-      let src = tpl_2(rst);
-
-      //let rcv1 <- auroraExt119.user[2].receive;
-      //let rcv2 <- auroraExt119.user[3].receive;
-      //let data = rcv1.payload;
-      //$display( "endpoint received %x from %d", data, tpl_2(rst) );
-      lastDataIn1 <= truncate(data);
-      if ( lastDataIn1 -1 != truncate(data) ) begin
-	 $display( "Data mismatch at aend 1 %x %x", lastDataIn1, data );
-	 indication.mismatch(lastDataIn1, truncate(data));
-      end
-
-
-      Bit#(14) dataCU = truncate(recvDataCount);
-      if ( dataCU == 0 ) begin
-	 indication.hexDump({truncate(data), src[3:0]});
-      end
-   endrule
+	 indication.receive(truncate(data), extend(src));
+      endrule
+   end
 	
    Reg#(Bit#(32)) lastDataIn2 <- mkReg(0);
    Reg#(Bit#(32)) aend2Throttle <- mkReg(0);
@@ -156,10 +139,11 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
    interface GeneralRequest request;
 
       method Action sendData(Bit#(32) count, Bit#(5) target, Bit#(32) stride);
-	 sendDataCount <= sendDataCount + count;
-	 sendDataCount2 <= sendDataCount2 + count;
+	 for (Integer link = 0; link < 4; link = link + 1) begin
+	    sendDataCount[link] <= count;
+	    sendDataCount2[link] <= count;
+	 end
 	 sendDataTarget <= target;
-	 sendDataStride <= stride;
       endmethod
       method Action setAuroraExtRoutingTable(Bit#(32) node, Bit#(32) portidx, Bit#(32) portsel);
 	 //auroraExtArbiter.setRoutingTable(truncate(node), truncate(portidx), truncate(portsel));
@@ -169,7 +153,7 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
       endmethod
       method Action setNetId(Bit#(32) netid);
 	 myNetIdx <= truncate(netid);
-	 auroraExtArbiter.setMyId(truncate(netid));
+	 //auroraExtArbiter.setMyId(truncate(netid));
 	 auroraExt119.setNodeIdx(truncate(netid));
       endmethod
       method Action auroraStatus(Bit#(32) dummy);

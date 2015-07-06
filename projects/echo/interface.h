@@ -70,6 +70,13 @@ public:
 	printf( "aurora data! %f\n", timespec_diff_sec(aurorastart, now) );
 	//fflush(stdout);
   }
+  virtual void receive(uint64_t data, uint8_t src) {
+    printf( "%s: %08lx--\n", __FUNCTION__, data );
+	timespec now;
+	clock_gettime(CLOCK_REALTIME, & now);
+	//printf( "aurora data! %f\n", timespec_diff_sec(aurorastart, now) );
+	//fflush(stdout);
+  }
   virtual void timeDiffDump(uint32_t diff, uint32_t ttype) {
   	if ( ttype < 16 ) {
 		timediff[ttype] += diff;

@@ -66,6 +66,7 @@ int main(int argc, const char **argv)
 	  myid = strtoul(userhostid, NULL, 0);
 	}
 
+	interface_init();
 	printf( "Done initializing hw interfaces\n" ); fflush(stdout);
 
 	printf( "initializing aurora with node id %ld\n", myid ); fflush(stdout);
@@ -73,35 +74,21 @@ int main(int argc, const char **argv)
 
 	/////////////////////////////////////////////////////////
 
-	fprintf(stderr, "Main::flush and invalidate complete\n");
 	if ( sem_init(&wait_sem, 1, 0) ) {
 		//error
 		fprintf(stderr, "sem_init failed!\n" );
 	}
 
-	for ( int j = 0; j < WRITE_BUFFER_COUNT; j++ ) {
-		for ( int i = 0; i < (8192+64)/4; i++ ) {
-			writeBuffers[j][i] = j;
-		}
-	}
-	for ( int j = 0; j < READ_BUFFER_COUNT; j++ ) {
-		for ( int i = 0; i < (8192+64)/4; i++ ) {
-			readBuffers[j][i] = 8192/4-i;
-		}
-	}
-
-	sleep(5);
-
+	sleep(10);
 	printf ( "sending start msg\n" ); fflush(stdout);
 	generalifc_start(/*datasource*/1);
 	//auroraifc_sendTest();
 
-	generalifc_readRemotePage(myid);
-	
-	sleep(2);
+	for (int i = 0; i < 10; i++) {
+	  generalifc_readRemotePage(myid);
+	  sleep(1);
+	}
 	generalifc_latencyReport();
 
-	printf( "Entering idle loop\n" );
-	while(1) sleep(10);
 	exit(0);
 }

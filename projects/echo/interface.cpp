@@ -52,13 +52,6 @@ void interface_init() {
 	device = new GeneralRequestProxy(GeneralRequestPortal);
 	deviceIndication = new GeneralIndication(GeneralIndicationPortal);
 	
-	for ( int i = 0; i < DMA_BUFFER_COUNT; i++ ) {
-		srcAllocs[i] = portalAlloc(walloc_sz, 1);
-		dstAllocs[i] = portalAlloc(ralloc_sz, 1);
-		srcBuffers[i] = (unsigned int *)portalMmap(srcAllocs[i], walloc_sz);
-		dstBuffers[i] = (unsigned int *)portalMmap(dstAllocs[i], ralloc_sz);
-	}
-	
 	pthread_mutex_init(&flashReqMutex, NULL);
 	pthread_cond_init(&flashReqCond, NULL);
 }
@@ -105,38 +98,14 @@ void auroraifc_start(int myid) {
 }
 
 
-int srcfd = 0;
-uint64_t* data64 = NULL;
-int size = 1024*1024*1024;
 void generalifc_start(int datasource) {
 	device->start(datasource);
-	srcfd = open("/home/wjun/large.dat", O_RDONLY);
-	void* data = mmap(NULL, size, PROT_READ, MAP_PRIVATE, srcfd, 0);
-	data64 = (uint64_t*) data;
 }
 
 void generalifc_readRemotePage(int myid) {
-/*
-	int src = 0;
-	int dst = 1;
-	if ( myid != src ) return;
-*/
-	if ( myid == 5 ) { 
-		device->sendData(1024*1024*1024, 7, 0);
-	} else if ( myid == 6 ) { 
-		//device->sendData(1024*1024*1024, 8, 0);
-	} else if ( myid == 7 ) {
-		//device->sendData(1024*1024*1024, 6, 0);
-	} else {
-		//device->sendData(1024*1024*1024, 6, 0);
-	}
-
-	for ( int i = 0; i < 2; i++ ) {
-		clock_gettime(CLOCK_REALTIME, & deviceIndication->aurorastart);
-		// addr, targetnode, datasource, tag
-		//device->readRemotePage(i, dst, 1, 0);
-		usleep(10000);
-	}
+  int dstid = ~myid;
+  device->auroraStatus(0);
+  device->sendData(1, dstid, 0);
 }
 void generalifc_latencyReport() {
 	for ( int i = 0; i < 16; i++ ) {
@@ -148,15 +117,5 @@ void generalifc_latencyReport() {
 
 void GeneralIndication::readPage(uint64_t addr, uint32_t dstnode, uint32_t datasource) {
 	printf( "readpage req! -> %d\n", dstnode ); fflush(stdout);
-	//device->readPageDone(0);
-	if ( datasource == 1 ) {
-		memcpy(data64+(addr*8192/sizeof(uint64_t)), srcBuffers[0], 8192);
-	}
-
-	if ( datasource < 3 ) {
-		//device->sendDMAPage(ref_srcAllocs[0], dstnode);
-	} else {
-		//device->readPageDone(0);
-	}
 }
 
