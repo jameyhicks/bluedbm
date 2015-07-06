@@ -56,29 +56,28 @@ import AuroraExtImport::*;
 import AuroraCommon::*;
 
 typedef enum {GeneralIndicationPortal, GeneralRequestPortal, 
-	HostMemServerIndicationPortal, HostMemServerRequestPortal, HostMMURequestPortal, HostMMUIndicationPortal
-	} IfcNames deriving (Eq,Bits);
+   HostMemServerIndicationPortal, HostMemServerRequestPortal, HostMMURequestPortal, HostMMUIndicationPortal
+   } IfcNames deriving (Eq,Bits);
 
 interface Top_Pins;
-	
-	interface Vector#(AuroraExtPerQuad, Aurora_Pins#(1)) aurora_ext;
-	interface Aurora_Clock_Pins aurora_quad119;
+   interface Vector#(AuroraExtPerQuad, Aurora_Pins#(1)) aurora_ext;
+      interface Aurora_Clock_Pins aurora_quad119;
 endinterface
 
-module mkConnectalTop#(HostInterface host) (ConnectalTop#(PhysAddrWidth,WordSz,Top_Pins,NumberOfMasters));
+module mkConnectalTop#(HostInterface host) (ConnectalTop#(PhysAddrWidth,DataBusWidth,Top_Pins,NumberOfMasters));
 
-	Clock clk250 = host.derivedClock;
-	Reset rst250 = host.derivedReset;
-	
-	Clock curClk <- exposeCurrentClock;
-	Reset curRst <- exposeCurrentReset;
+   Clock clk250 = host.derivedClock;
+   Reset rst250 = host.derivedReset;
+
+   Clock curClk <- exposeCurrentClock;
+   Reset curRst <- exposeCurrentReset;
 
    GeneralIndicationProxy generalIndicationProxy <- mkGeneralIndicationProxy(GeneralIndicationPortal);
 
    MainIfc hwmain <- mkMain(generalIndicationProxy.ifc, clk250, rst250);
    GeneralRequestWrapper generalRequestWrapper <- mkGeneralRequestWrapper(GeneralRequestPortal,hwmain.request);
 
-   Vector#(6,StdPortal) portals;
+   Vector#(2,StdPortal) portals;
    portals[0] = generalRequestWrapper.portalIfc;
    portals[1] = generalIndicationProxy.portalIfc; 
    
@@ -88,10 +87,10 @@ module mkConnectalTop#(HostInterface host) (ConnectalTop#(PhysAddrWidth,WordSz,T
    interface slave = ctrl_mux;
    interface masters = nil;
 
-	interface Top_Pins pins;
-		interface Aurora_Pins aurora_ext = hwmain.aurora_ext;
-		interface Aurora_Clock_Pins aurora_quad119 = hwmain.aurora_quad119;
-	endinterface
+   interface Top_Pins pins;
+      interface Aurora_Pins aurora_ext = hwmain.aurora_ext;
+      interface Aurora_Clock_Pins aurora_quad119 = hwmain.aurora_quad119;
+   endinterface
 endmodule
 
 
