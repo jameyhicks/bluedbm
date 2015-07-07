@@ -59,13 +59,8 @@ typedef enum {GeneralIndicationPortal, GeneralRequestPortal,
    HostMemServerIndicationPortal, HostMemServerRequestPortal, HostMMURequestPortal, HostMMUIndicationPortal
    } IfcNames deriving (Eq,Bits);
 
-interface Top_Pins;
-   interface Vector#(AuroraExtPerQuad, Aurora_Pins#(1)) aurora_ext;
-      interface Aurora_Clock_Pins aurora_quad119;
-endinterface
-
 (* synthesize *)
-module mkConnectalTop#(Clock clk250, Reset rst250) (ConnectalTop#(PhysAddrWidth,DataBusWidth,Top_Pins,NumberOfMasters));
+module mkConnectalTop#(Clock clk250, Reset rst250) (ConnectalTop#(PhysAddrWidth,DataBusWidth,AuroraExtPins,NumberOfMasters));
 
    Clock curClk <- exposeCurrentClock;
    Reset curRst <- exposeCurrentReset;
@@ -85,10 +80,12 @@ module mkConnectalTop#(Clock clk250, Reset rst250) (ConnectalTop#(PhysAddrWidth,
    interface slave = ctrl_mux;
    interface masters = nil;
 
-   interface Top_Pins pins;
+   interface AuroraExtPins pins;
       interface Aurora_Pins aurora_ext = hwmain.aurora_ext;
       interface Aurora_Clock_Pins aurora_quad119 = hwmain.aurora_quad119;
    endinterface
 endmodule
 
+export mkConnectalTop;
+export AuroraExtPins;
 

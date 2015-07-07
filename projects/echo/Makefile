@@ -4,7 +4,7 @@ CORE_SCRIPTS=$(shell realpath ../../core-scripts)
 INTERFACES = GeneralRequest GeneralIndication
 
 NUMBER_OF_MASTERS=0
-PIN_TYPE=Top_Pins
+PIN_TYPE=AuroraExtPins
 DATA_BUS_WIDTH=128
 
 BSVFILES = Main.bsv Top.bsv \
@@ -16,8 +16,6 @@ BSVFILES = Main.bsv Top.bsv \
 	../../controller/src/hw_virtex/FlashCtrlVirtex.bsv
 
 CPPFILES=main.cpp interface.cpp 
-
-PIN_TYPE=Top_Pins
 
 CONNECTALFLAGS += -D NodeCount=2
 CONNECTALFLAGS += -D IMPORT_HOST_CLOCKS -D DataBusWidth=128 --clib rt
