@@ -25,7 +25,7 @@ CONNECTALFLAGS += -D IMPORT_HOST_CLOCKS -D DataBusWidth=128 --clib rt
 CONNECTALFLAGS += -P mkPcieEndpointX7 -P mkMemMasterEngine -P mkMemSlaveEngineSynth -P mkPcieTracer
 CONNECTALFLAGS += -P mkConnectalTop
 
-ifeq ($(BOARD), vc707)
+ifneq ($(BOARD), bluesim)
 CONNECTALFLAGS += \
 	--verilog ../../xilinx/aurora_64b66b/ \
 	--xci $(CONNECTALDIR)/out/$(BOARD)/aurora_64b66b_X1Y24/aurora_64b66b_X1Y24.xci \
