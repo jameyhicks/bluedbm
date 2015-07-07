@@ -23,7 +23,7 @@ CONNECTALFLAGS += -D NodeCount=2
 CONNECTALFLAGS += -D IMPORT_HOST_CLOCKS -D DataBusWidth=128 --clib rt
 
 CONNECTALFLAGS += -P mkPcieEndpointX7 -P mkMemMasterEngine -P mkMemSlaveEngineSynth -P mkPcieTracer
-CONNECTALFLAGS += -P mkAuroraExt
+CONNECTALFLAGS += -P mkConnectalTop
 
 ifneq ($(BOARD), bluesim)
 CONNECTALFLAGS += \
