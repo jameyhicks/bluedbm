@@ -55,17 +55,17 @@ typedef Bit#(HeaderFieldSz) HeaderField;
 typedef `NodeCount NodeCount;
 
 interface AuroraEndpointUserIfc#(type t);
-	method Action send(t data, Bit#(HeaderFieldSz) dst);
-	method ActionValue#(Tuple2#(t, Bit#(HeaderFieldSz))) receive;
+   method Action send(t data, Bit#(HeaderFieldSz) dst);
+   method ActionValue#(Tuple2#(t, Bit#(HeaderFieldSz))) receive;
 endinterface
 interface AuroraEndpointCmdIfc;
-	method Action send(AuroraPacket data);
-	method ActionValue#(AuroraPacket) receive;
-	//method HeaderField packetType;
+   method Action send(AuroraPacket data);
+   method ActionValue#(AuroraPacket) receive;
+   //method HeaderField packetType;
 endinterface
 interface AuroraEndpointIfc#(type t);
-interface AuroraEndpointUserIfc#(t) user;
-interface AuroraEndpointCmdIfc cmd;
+   interface AuroraEndpointUserIfc#(t) user;
+   interface AuroraEndpointCmdIfc cmd;
 endinterface
 
 module mkAuroraEndpointRaw (AuroraEndpointIfc#(t))
