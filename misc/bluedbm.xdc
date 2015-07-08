@@ -20,3 +20,7 @@ set_max_delay -from [get_clocks TS_user_clk_i_all] -to [get_clocks -of_objects [
 
 set_false_path -from [get_cells */*auroraExt119/auroraExtImport/aurora_64b66b_block_i/gen_code_reset_logic[*].support_reset_logic_i/gt_rst_r_reg*] -to [get_cells */*auroraExt119/auroraExtImport/aurora_64b66b_block_i/gen_code_reset_logic[*].support_reset_logic_i/u_rst_sync_gt/stg1_aurora_64b66b_cdc_to_reg]
 
+set_false_path -from [get_clocks userclk2] -to [get_clocks TS_user_clk_i_all]
+set_false_path -from [get_clocks TS_user_clk_i_all] -to [get_clocks userclk2]
+set_false_path -from [get_clocks userclk2_1] -to [get_clocks TS_user_clk_i_all]
+set_false_path -from [get_clocks TS_user_clk_i_all] -to [get_clocks userclk2_1]
