@@ -74,6 +74,9 @@ interface AuroraExtUserIfc;
 	method ActionValue#(AuroraPacket) receive;
 	method Bit#(1) lane_up;
 	method Bit#(1) channel_up;
+	method Bit#(1) hard_err();
+	method Bit#(1) soft_err();
+	method Bit#(32) soft_err_count();
 	//interface Clock clk;
 	//interface Reset rst;
 endinterface
@@ -260,6 +263,12 @@ module mkAuroraExt#(Clock gtx_clk_p, Clock gtx_clk_n, Clock clk50) (AuroraExtIfc
 		, defaultClock, defaultReset
 		, clocked_by auroraClk[3], reset_by auroraRst[3] );
 
+        Vector#(AuroraExtPerQuad, Reg#(Bit#(32))) softErrorCount <- replicateM(mkReg(0));
+        for (Integer i = 0; i < valueOf(AuroraExtPerQuad); i = i + 1)
+	   rule soft_err_rule if (auroraExt[i].soft_err == 1);
+	      softErrorCount[i] <= softErrorCount[i] + 1;
+	   endrule
+
 	Vector#(AuroraExtPerQuad, AuroraExtUserIfc) userifcs;
 	for ( Integer idx = 0; idx < valueOf(AuroraExtPerQuad); idx = idx + 1 ) begin
 		userifcs[idx] = interface AuroraExtUserIfc;
@@ -272,6 +281,9 @@ module mkAuroraExt#(Clock gtx_clk_p, Clock gtx_clk_n, Clock clk50) (AuroraExtIfc
 			endmethod
 			method Bit#(1) lane_up = auroraExt[idx].lane_up;
 			method Bit#(1) channel_up = auroraExt[idx].channel_up;
+			method Bit#(1) hard_err = auroraExt[idx].hard_err;
+			method Bit#(1) soft_err = auroraExt[idx].soft_err;
+			method Bit#(32) soft_err_count = softErrorCount[idx];
 		endinterface: AuroraExtUserIfc;
 	end
 	interface user = userifcs;
