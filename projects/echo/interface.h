@@ -83,6 +83,21 @@ public:
 		timediffcnt[ttype] ++;
 	}
   }
+  virtual void hardError(uint32_t port) {
+      fprintf(stderr, "hardError on port %d\n", port);
+  }
+  virtual void auroraStatus(uint32_t linkUp, uint32_t softErrorCount0, uint32_t softErrorCount1, uint32_t softErrorCount2, uint32_t softErrorCount3) {
+      fprintf(stderr,
+	      "aurora link status 0 %s 1 %s 2 %s 3 %s error counts %d %d %d %d\n",
+	      (linkUp & 1) ? "up" : "down",
+	      (linkUp & 2) ? "up" : "down",
+	      (linkUp & 4) ? "up" : "down",
+	      (linkUp & 8) ? "up" : "down",
+	      softErrorCount0,
+	      softErrorCount1,
+	      softErrorCount2,
+	      softErrorCount3);
+  }
 };
 
 

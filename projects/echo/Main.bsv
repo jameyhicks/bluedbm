@@ -57,6 +57,8 @@ interface GeneralIndication;
    method Action hexDump(Bit#(32) hex);
    method Action mismatch(Bit#(32) hex, Bit#(32) hex2);
    method Action timeDiffDump(Bit#(32) diff, Bit#(32) ttype);
+   method Action hardError(Bit#(32) portnum);
+   method Action auroraStatus(Bit#(32) linkUp, Bit#(32) softErrorCount0, Bit#(32) softErrorCount1, Bit#(32) softErrorCount2, Bit#(32) softErrorCount3);
 endinterface
 
 interface MainIfc;
@@ -157,13 +159,17 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
 	 auroraExt119.setNodeIdx(truncate(netid));
       endmethod
       method Action auroraStatus(Bit#(32) dummy);
-	 indication.hexDump({
-			     0,
-			     auroraExt119.user[3].channel_up,
-			     auroraExt119.user[2].channel_up,
-			     auroraExt119.user[1].channel_up,
-			     auroraExt119.user[0].channel_up
-	    });
+	 indication.auroraStatus({
+				  0,
+				  auroraExt119.user[3].channel_up,
+				  auroraExt119.user[2].channel_up,
+				  auroraExt119.user[1].channel_up,
+				  auroraExt119.user[0].channel_up
+				  },
+				 auroraExt119.user[0].soft_err_count,
+				 auroraExt119.user[1].soft_err_count,
+				 auroraExt119.user[2].soft_err_count,
+				 auroraExt119.user[3].soft_err_count);
       endmethod
    endinterface
 
