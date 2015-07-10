@@ -38,29 +38,23 @@ bool getPipes(unsigned char nidx, unsigned char pidx) {
 		sprintf(fifonamewr, "../aurora%02d_%02dup", nidx,off);
 		sprintf(fifonamerd, "../aurora%02d_%02ddown", nidx,off);
 		// these will probably not fail, or fail with EEXIST
-		if( access( fifonamerd, F_OK ) == -1 ) {
-			if (mkfifo(fifonamerd, S_IRUSR| S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) < 0)
-				fprintf(stderr, "%s:%d mkfifo returned errno=%d:%s\n", __FUNCTION__, __LINE__, errno, strerror(errno));
-		}
-		if( access( fifonamewr, F_OK ) == -1 ) {
-			if (mkfifo(fifonamewr, S_IRUSR| S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) < 0)
-				fprintf(stderr, "%s:%d mkfifo returned errno=%d:%s\n", __FUNCTION__, __LINE__, errno, strerror(errno));
-		}
 
 	} else if ( pidx >= 2 && pidx < 4 && nidx > 0) { // comes up
 		if ( pidx == 2 ) off = 1;
 		if ( pidx == 3 ) off = 0;
 		sprintf(fifonamerd, "../aurora%02d_%02dup", nidx-1,off);
 		sprintf(fifonamewr, "../aurora%02d_%02ddown", nidx-1,off);
-		// these will probably not fail, or fail with EEXIST
-		if( access( fifonamerd, F_OK ) == -1 ) {
-			if (mkfifo(fifonamerd, S_IRUSR| S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) < 0)
-				fprintf(stderr, "%s:%d mkfifo returned errno=%d:%s\n", __FUNCTION__, __LINE__, errno, strerror(errno));
-		}
-		if( access( fifonamewr, F_OK ) == -1 ) {
-			if (mkfifo(fifonamewr, S_IRUSR| S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) < 0)
-				fprintf(stderr, "%s:%d mkfifo returned errno=%d:%s\n", __FUNCTION__, __LINE__, errno, strerror(errno));
-		}
+	}
+
+	if( access( fifonamerd, F_OK ) == -1 ) {
+		fprintf(stderr, "%s:%d mkfifo %s\n", __FUNCTION__, __LINE__, fifonamerd);
+		if (mkfifo(fifonamerd, S_IRUSR| S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) < 0)
+			fprintf(stderr, "%s:%d mkfifo returned errno=%d:%s\n", __FUNCTION__, __LINE__, errno, strerror(errno));
+	}
+	if( access( fifonamewr, F_OK ) == -1 ) {
+		fprintf(stderr, "%s:%d mkfifo %s\n", __FUNCTION__, __LINE__, fifonamewr);
+		if (mkfifo(fifonamewr, S_IRUSR| S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) < 0)
+			fprintf(stderr, "%s:%d mkfifo returned errno=%d:%s\n", __FUNCTION__, __LINE__, errno, strerror(errno));
 	}
 
 	if ( !fifo_exists[rdidx] ) {
@@ -68,9 +62,10 @@ bool getPipes(unsigned char nidx, unsigned char pidx) {
 		if ( fifo_fd[rdidx] != -1 ) {
 			read_recv[pidx] = true;
 			fifo_exists[rdidx] = true;
-			fprintf(stderr,  "Created and opened read fd for %d(%d)\n", nidx, pidx );
+			fprintf(stderr,  "Created and opened %s read fd for %d(%d)\n", fifonamerd, nidx, pidx );
 		} else {
-			fprintf(stderr, "%s:%d failed to open fifo %s errno=%d:%s\n", __FUNCTION__, __LINE__, fifonamerd, errno, strerror(errno));
+			char wd[128];
+			fprintf(stderr, "%s:%d cwd %s failed to open fifo %s errno=%d:%s\n", __FUNCTION__, __LINE__, getcwd(wd, sizeof(wd)), fifonamerd, errno, strerror(errno));
 		}
 	}
 
@@ -78,9 +73,10 @@ bool getPipes(unsigned char nidx, unsigned char pidx) {
 		fifo_fd[wridx] = open(fifonamewr, O_WRONLY| O_NONBLOCK);
 		if ( fifo_fd[wridx] != -1 ) {
 			fifo_exists[wridx] = true;
-			fprintf(stderr, "Created and opened write fd for %d(%d)\n", nidx, pidx );
+			fprintf(stderr, "Created and opened %s write fd for %d(%d)\n", fifonamewr, nidx, pidx );
 		} else {
-			fprintf(stderr, "%s:%d failed to open fifo %s errno=%d:%s\n", __FUNCTION__, __LINE__, fifonamewr, errno, strerror(errno));
+			char wd[128];
+			fprintf(stderr, "%s:%d cwd %s failed to open fifo %s errno=%d:%s\n", __FUNCTION__, __LINE__, getcwd(wd, sizeof(wd)), fifonamewr, errno, strerror(errno));
 		}
 	}
 
@@ -105,7 +101,8 @@ extern "C" bool bdpiRecvAvailable(unsigned char nidx, unsigned char pidx) {
 		fprintf(stderr, "read %d bytes %llx %d(%d)\n", r, lastread[pidx], nidx, pidx );
 		return true;
 	} else if ( r < 0) {
-		fprintf(stderr, "%s:%d: fd=%d errno=%d:%s\n", __FUNCTION__, __LINE__, errno, strerror(errno));
+		if (errno != EAGAIN)
+			fprintf(stderr, "%s:%d: fd=%d errno=%d:%s\n", __FUNCTION__, __LINE__,  fifo_fd[rdidx], errno, strerror(errno));
 	}
 	return false;
 }
@@ -135,7 +132,7 @@ extern "C" bool bdpiWrite(unsigned char nidx, unsigned char pidx, unsigned long 
 	if ( r < 8 && r > 0 ) {
 		return false;
 	} else if ( r < 0) {
-		fprintf(stderr, "%s:%d: fd=%d errno=%d:%s\n", __FUNCTION__, __LINE__, errno, strerror(errno));
+		fprintf(stderr, "%s:%d: fd=%d errno=%d:%s\n", __FUNCTION__, __LINE__, fifo_fd[wridx], errno, strerror(errno));
 	}
 
 	return true;
