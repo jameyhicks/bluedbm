@@ -5,13 +5,15 @@ mkdir bsimall
 
 cd bsimall
 
+export SIM_LINK_DIR=$PWD
+
 nodes="1 2"
 
 for n in $nodes; do
     cp -r ../bluesim bluesim$n
 done
 
-ID=5
+ID=0
 for n in $nodes; do
     cd bluesim$n
     ./bin/bsim | tee ../bsim$n.txt & bsimpids="$bsimpids $!"
