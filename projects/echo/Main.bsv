@@ -79,7 +79,7 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
    Reset curRst <- exposeCurrentReset;
 
    Reg#(Bool) started <- mkReg(False);
-   Reg#(Bit#(HeaderFieldSz)) myNetIdx <- mkReg(1);
+   Reg#(Bit#(HeaderFieldSz)) myNodeId <- mkReg(1);
 
 `ifndef BSIM
    ClockDividerIfc auroraExtClockDiv5 <- mkDCMClockDivider(5, 4, clocked_by clk250);
@@ -108,11 +108,11 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
       rule sendAuroraData if(sendDataCount[link] > 0 );
 	 sendDataCount[link] <= sendDataCount[link] - 1;
 	 let ptype = 0;
-	 if (myNetIdx == 1)
+	 if (myNodeId == 1)
 	    ptype = 2;
 	 Payload data = zeroExtend({sendDataCount[link],8'hbb});
 	 $display("sendAuroraData link=%d data=%h", link, data);
-	 auroraExt119.user[link].send(AuroraPacket { payload: data, dst: sendDataTarget, src: myNetIdx, ptype: fromInteger(link)});
+	 auroraExt119.user[link].send(AuroraPacket { payload: data, dst: sendDataTarget, src: myNodeId, ptype: fromInteger(link)});
       endrule
 
    for (Integer link = 0; link < 4; link = link + 1) begin
@@ -147,7 +147,7 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
 	 started <= True;
       endmethod
       method Action setNodeId(Bit#(32) nodeId);
-	 myNetIdx <= truncate(netid);
+	 myNodeId <= truncate(nodeId);
 	 //auroraExtArbiter.setMyId(truncate(netid));
 	 auroraExt119.setNodeIdx(truncate(nodeId));
       endmethod
