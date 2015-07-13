@@ -58,27 +58,15 @@ typedef struct {
 } AuroraPacket deriving (Bits,Eq);
 
 
-/*
-interface AuroraExtFlowControlIfc;
-	method Action send(AuroraPacket data);
-	method ActionValue#(AuroraPacket) recv;
-
-	method Bit#(1) channel_up;
-	method Bit#(1) lane_up;
-endinterface
-*/
 interface AuroraExtUserIfc;
-	method Action send(AuroraPacket data);
-	method ActionValue#(AuroraPacket) receive;
-	method Bit#(1) lane_up;
-	method Bit#(1) channel_up;
-	method Bit#(1) hard_err();
-	method Bit#(1) soft_err();
-	method Bit#(32) soft_err_count();
-	//interface Clock clk;
-	//interface Reset rst;
+   interface Put#(AuroraPacket) send;
+   interface Get#(AuroraPacket) receive;
+   method Bit#(1) lane_up;
+   method Bit#(1) channel_up;
+   method Bit#(1) hard_err();
+   method Bit#(1) soft_err();
+   method Bit#(32) soft_err_count();
 endinterface
-
 
 
 module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(HeaderField) nodeIdx, Integer linkIdx, Clock uclk, Reset urst) (AuroraExtUserIfc);
@@ -187,15 +175,10 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(
 		end
 	endrule
 	
-	method Action send(AuroraPacket data);
-		outPacketQ.enq(data);
-	endmethod
-	method ActionValue#(AuroraPacket) receive;
-		inPacketQ.deq;
-		return inPacketQ.first;
-	endmethod
-	method Bit#(1) channel_up = user.channel_up;
-	method Bit#(1) lane_up = user.lane_up;
+   interface Put send = toPut(outPacketQ);
+   interface Get receive = toGet(inPacketQ);
+   method Bit#(1) channel_up = user.channel_up;
+   method Bit#(1) lane_up = user.lane_up;
 endmodule
 
 
@@ -273,19 +256,14 @@ module mkAuroraExt#(Clock gtx_clk_p, Clock gtx_clk_n, Clock clk50) (AuroraExtIfc
 	Vector#(AuroraExtPerQuad, AuroraExtUserIfc) userifcs;
 	for ( Integer idx = 0; idx < valueOf(AuroraExtPerQuad); idx = idx + 1 ) begin
 		userifcs[idx] = interface AuroraExtUserIfc;
-			method Action send(AuroraPacket data);
-				auroraExt[idx].send(data);
-			endmethod
-			method ActionValue#(AuroraPacket) receive;
-				let d <- auroraExt[idx].receive;
-				return d;
-			endmethod
-			method Bit#(1) lane_up = auroraExt[idx].lane_up;
-			method Bit#(1) channel_up = auroraExt[idx].channel_up;
-			method Bit#(1) hard_err = auroraExt[idx].hard_err;
-			method Bit#(1) soft_err = auroraExt[idx].soft_err;
-			method Bit#(32) soft_err_count = softErrorCount[idx];
-		endinterface: AuroraExtUserIfc;
+				   interface Put send = auroraExt[idx].send;
+				   interface Get receive = auroraExt[idx].receive;
+				   method Bit#(1) lane_up = auroraExt[idx].lane_up;
+				   method Bit#(1) channel_up = auroraExt[idx].channel_up;
+				   method Bit#(1) hard_err = auroraExt[idx].hard_err;
+				   method Bit#(1) soft_err = auroraExt[idx].soft_err;
+				   method Bit#(32) soft_err_count = softErrorCount[idx];
+				endinterface: AuroraExtUserIfc;
 	end
 	interface user = userifcs;
 	interface Vector aurora = auroraPins;

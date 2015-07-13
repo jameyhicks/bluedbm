@@ -112,7 +112,7 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
 	    ptype = 2;
 	 Payload data = zeroExtend({sendDataCount[link],8'hbb});
 	 $display("sendAuroraData link=%d data=%h", link, data);
-	 auroraExt119.user[link].send(AuroraPacket { payload: data, dst: sendDataTarget, src: myNodeId, ptype: fromInteger(link)});
+	 auroraExt119.user[link].send.put(AuroraPacket { payload: data, dst: sendDataTarget, src: myNodeId, ptype: fromInteger(link)});
       endrule
 
    for (Integer link = 0; link < 4; link = link + 1) begin
@@ -120,7 +120,7 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
       rule recvAuroraData;
 	 recvDataCount <= recvDataCount + 1;
 
-	 let rst <- auroraExt119.user[link].receive;
+	 let rst <- auroraExt119.user[link].receive.get();
 	 let data = rst.payload;
 	 let src = rst.src;
 

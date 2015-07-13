@@ -13,6 +13,7 @@ import FIFOF::*;
 import BRAMFIFO::*;
 import Vector::*;
 import RegFile::*;
+import GetPut::*;
 
 import AuroraExtImport::*;
 import AuroraCommon::*;
@@ -46,21 +47,21 @@ module mkAuroraExtArbiterBar#(Vector#(tExtCount, AuroraExtUserIfc) extPorts, Vec
 	rule scatterOutUp;
 		if ( outQupOff == 0 ) begin
 			outQupOff <= 1;
-			pUp[0].send(outQup.first);
+			pUp[0].send.put(outQup.first);
 			outQup.deq;
 		end else if ( outQupOff == 1 ) begin
 			outQupOff <= 0;
-			pUp[1].send(outQup.first);
+			pUp[1].send.put(outQup.first);
 			outQup.deq;
 		end
 	endrule
 	rule collectInUp;
 		if ( inQupOff == 0 ) begin
-			let d <- pUp[0].receive;
+			let d <- pUp[0].receive.get();
 			inQup.enq(d);
 			inQupOff <= 1;
 		end else if ( inQupOff == 1 ) begin
-			let d <- pUp[1].receive;
+			let d <- pUp[1].receive.get();
 			inQup.enq(d);
 			inQupOff <= 0;
 		end
@@ -68,22 +69,22 @@ module mkAuroraExtArbiterBar#(Vector#(tExtCount, AuroraExtUserIfc) extPorts, Vec
 	rule scatterOutDown;
 		if ( outQdownOff == 0 ) begin
 			outQdownOff <= 1;
-			pDown[0].send(outQdown.first);
+			pDown[0].send.put(outQdown.first);
 			outQdown.deq;
 		end else if ( outQdownOff == 1 ) begin
 			outQdownOff <= 0;
-			pDown[1].send(outQdown.first);
+			pDown[1].send.put(outQdown.first);
 			outQdown.deq;
 		end
 	endrule
 	rule collectInDown;
 		if ( inQdownOff == 0 ) begin
 			inQdownOff <= 1;
-			let d <- pDown[0].receive;
+			let d <- pDown[0].receive.get();
 			inQdown.enq(d);
 		end else if ( inQdownOff == 1 ) begin
 			inQdownOff <= 0;
-			let d <- pDown[1].receive;
+			let d <- pDown[1].receive.get();
 			inQdown.enq(d);
 		end
 	endrule
