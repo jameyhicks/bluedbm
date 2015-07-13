@@ -91,24 +91,22 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(
 	SyncFIFOIfc#(AuroraPacket) inPacketQ <- mkSyncFIFOFromCC(8, uclk);
 
 
-	Reg#(Bit#(16)) maxInFlightUp <- mkReg(0);
-	Reg#(Bit#(16)) maxInFlightDown <- mkReg(0);
-	Reg#(Bit#(16)) curInQUp <- mkReg(0);
-	Reg#(Bit#(16)) curInQDown <- mkReg(0);
+	ConfigCounter#(16)   maxInFlight <- mkConfigCounter(0);
+        ConfigCounter#(16)        curInQ <- mkConfigCounter(0);
 	ConfigCounter#(16) curSendBudget <- mkConfigCounter(0);
 
 	FIFOF#(AuroraFC) sendQ <- mkSizedFIFOF(32);
 
    Reg#(Bit#(16)) seqno <- mkReg(0);
    rule sendFlowControl
-      if ((maxInFlightUp-maxInFlightDown)
-	  +(curInQUp-curInQDown)
+      if (maxInFlight.read()
+	  +curInQ.read()
 	  +fromInteger(windowSize) < fromInteger(recvQDepth) && user.channel_up() == 1 );
       
       //flowControlQ.enq(fromInteger(windowSize));
       //$display("flowControl node %d windowSize=%d curSendBudget", nodeIdx, windowSize, curSendBudget.read());
       user.send({seqno,fromInteger(windowSize),1'b1});
-      maxInFlightUp <= maxInFlightUp + fromInteger(windowSize);
+      maxInFlight.increment(fromInteger(windowSize));
       seqno <= seqno + 1;
    endrule
    (* descending_urgency = "sendPacket,sendFlowControl" *)
@@ -130,8 +128,8 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(
 			curSendBudget.increment(unpack(truncate(data)));
 		end else begin
 			recvQ.enq(data);
-			curInQUp <= curInQUp + 1;
-			maxInFlightDown <= maxInFlightDown + 1;
+			curInQ.increment(1);
+			maxInFlight.decrement(1);
 		end
 	endrule
 
@@ -167,7 +165,7 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(
 	endrule
 
 	rule desInPacket;
-		curInQDown <= curInQDown + 1;
+		curInQ.decrement(1);
 		recvQ.deq;
 
 		let d = recvQ.first;
