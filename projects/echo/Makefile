@@ -1,4 +1,4 @@
-CONNECTALDIR=../../tools/connectal
+CONNECTALDIR=../../../connectal
 CORE_SCRIPTS=$(shell realpath ../../core-scripts)
 
 INTERFACES = GeneralRequest GeneralIndication
