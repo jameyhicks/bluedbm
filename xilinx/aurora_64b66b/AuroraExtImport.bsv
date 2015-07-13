@@ -30,6 +30,7 @@ import XilinxCells :: *;
 import GetPut::*;
 import Pipe::*;
 import SimLink::*;
+import ConfigCounter::*;
 
 import AuroraCommon::*;
 
@@ -94,12 +95,10 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(
 	Reg#(Bit#(16)) maxInFlightDown <- mkReg(0);
 	Reg#(Bit#(16)) curInQUp <- mkReg(0);
 	Reg#(Bit#(16)) curInQDown <- mkReg(0);
-	Reg#(Bit#(16)) curSendBudgetUp <- mkReg(0);
-	Reg#(Bit#(16)) curSendBudgetDown <- mkReg(0);
+	ConfigCounter#(16) curSendBudget <- mkConfigCounter(0);
 
 	FIFOF#(AuroraFC) sendQ <- mkSizedFIFOF(32);
 
-   let curSendBudget = curSendBudgetUp - curSendBudgetDown;
    Reg#(Bit#(16)) seqno <- mkReg(0);
    rule sendFlowControl
       if ((maxInFlightUp-maxInFlightDown)
@@ -107,17 +106,17 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(
 	  +fromInteger(windowSize) < fromInteger(recvQDepth) && user.channel_up() == 1 );
       
       //flowControlQ.enq(fromInteger(windowSize));
-      $display("flowControl node %d windowSize=%d curSendBudget", nodeIdx, windowSize, curSendBudget);
+      $display("flowControl node %d windowSize=%d curSendBudget", nodeIdx, windowSize, curSendBudget.read());
       user.send({seqno,fromInteger(windowSize),1'b1});
       maxInFlightUp <= maxInFlightUp + fromInteger(windowSize);
       seqno <= seqno + 1;
    endrule
    (* descending_urgency = "sendPacket,sendFlowControl" *)
-   rule sendPacket if ( curSendBudget > 0 && user.channel_up() == 1 );
+   rule sendPacket if ( curSendBudget.positive() && user.channel_up() == 1 );
       sendQ.deq;
       $display("sendPacket.user node %d link %d %h", nodeIdx, linkIdx, sendQ.first);
       user.send({sendQ.first, 1'b0});
-      curSendBudgetDown <= curSendBudgetDown + 1;
+      curSendBudget.decrement(1);
    endrule
 
 	rule recvPacket;
@@ -126,9 +125,9 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(
 		Bit#(1) control = d[0];
 		AuroraFC data = truncate(d>>1);
 
-	   $display("recvPacket node %d link %d d=%h control=%d budgetup %h %h down %h", nodeIdx, linkIdx, d, control, curSendBudgetUp, curSendBudgetUp + truncate(data), curSendBudgetDown);
+	   $display("recvPacket node %d link %d d=%h control=%d budgetup %h", nodeIdx, linkIdx, d, control, curSendBudget.read());
 		if ( control == 1 ) begin
-			curSendBudgetUp <= curSendBudgetUp + truncate(data);
+			curSendBudget.increment(unpack(truncate(data)));
 		end else begin
 			recvQ.enq(data);
 			curInQUp <= curInQUp + 1;
