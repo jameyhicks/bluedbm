@@ -106,7 +106,7 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(
 	  +fromInteger(windowSize) < fromInteger(recvQDepth) && user.channel_up() == 1 );
       
       //flowControlQ.enq(fromInteger(windowSize));
-      $display("flowControl node %d windowSize=%d curSendBudget", nodeIdx, windowSize, curSendBudget.read());
+      //$display("flowControl node %d windowSize=%d curSendBudget", nodeIdx, windowSize, curSendBudget.read());
       user.send({seqno,fromInteger(windowSize),1'b1});
       maxInFlightUp <= maxInFlightUp + fromInteger(windowSize);
       seqno <= seqno + 1;
@@ -114,7 +114,7 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(
    (* descending_urgency = "sendPacket,sendFlowControl" *)
    rule sendPacket if ( curSendBudget.positive() && user.channel_up() == 1 );
       sendQ.deq;
-      $display("sendPacket.user node %d link %d %h", nodeIdx, linkIdx, sendQ.first);
+      //$display("sendPacket.user node %d link %d %h", nodeIdx, linkIdx, sendQ.first);
       user.send({sendQ.first, 1'b0});
       curSendBudget.decrement(1);
    endrule
@@ -125,7 +125,7 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(
 		Bit#(1) control = d[0];
 		AuroraFC data = truncate(d>>1);
 
-	   $display("recvPacket node %d link %d d=%h control=%d budgetup %h", nodeIdx, linkIdx, d, control, curSendBudget.read());
+	   //$display("recvPacket node %d link %d d=%h control=%d budgetup %h", nodeIdx, linkIdx, d, control, curSendBudget.read());
 		if ( control == 1 ) begin
 			curSendBudget.increment(unpack(truncate(data)));
 		end else begin
@@ -185,7 +185,6 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(
 		end else begin
 			inPacketOffset <= 0;
 			Payload t = inPacketBuffer.payload | (zeroExtend(d) <<(headInternalOffset+valueOf(AuroraFCWidth)));
-			    $display("inpacketQ.enq node=%d link=%d", nodeIdx, linkIdx);
 			inPacketQ.enq(AuroraPacket{src: inPacketBuffer.src, dst:inPacketBuffer.dst, ptype:inPacketBuffer.ptype, payload: t});
 		end
 	endrule
@@ -195,7 +194,6 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(
 	endmethod
 	method ActionValue#(AuroraPacket) receive;
 		inPacketQ.deq;
-	   $display("inpacketQ.first node=%d link=%d %h", nodeIdx, linkIdx, inPacketQ.first);
 		return inPacketQ.first;
 	endmethod
 	method Bit#(1) channel_up = user.channel_up;
