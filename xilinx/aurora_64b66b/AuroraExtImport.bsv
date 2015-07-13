@@ -18,6 +18,7 @@ export mkAuroraExt;
 */
 
 import FIFO::*;
+import FIFOF::*;
 import Vector::*;
 import BRAMFIFO::*;
 
@@ -79,7 +80,7 @@ endinterface
 
 
 
-module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Clock uclk, Reset urst) (AuroraExtUserIfc);
+module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Reg#(HeaderField) nodeIdx, Integer linkIdx, Clock uclk, Reset urst) (AuroraExtUserIfc);
 	Integer recvQDepth = 200;
 	Integer windowSize = 100;
 
@@ -96,23 +97,28 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Clock
 	Reg#(Bit#(16)) curSendBudgetUp <- mkReg(0);
 	Reg#(Bit#(16)) curSendBudgetDown <- mkReg(0);
 
-	FIFO#(AuroraFC) sendQ <- mkSizedFIFO(32);
+	FIFOF#(AuroraFC) sendQ <- mkSizedFIFOF(32);
 
-	rule sendPacket;
-		let curSendBudget = curSendBudgetUp - curSendBudgetDown;
-		if ((maxInFlightUp-maxInFlightDown)
-			+(curInQUp-curInQDown)
-			+fromInteger(windowSize) < fromInteger(recvQDepth)) begin
-		
-			//flowControlQ.enq(fromInteger(windowSize));
-			user.send({fromInteger(windowSize),1'b1});
-			maxInFlightUp <= maxInFlightUp + fromInteger(windowSize);
-		end else if ( curSendBudget > 0 ) begin
-			sendQ.deq;
-			user.send({sendQ.first, 1'b0});
-			curSendBudgetDown <= curSendBudgetDown + 1;
-		end
-	endrule
+   let curSendBudget = curSendBudgetUp - curSendBudgetDown;
+   Reg#(Bit#(16)) seqno <- mkReg(0);
+   rule sendFlowControl
+      if ((maxInFlightUp-maxInFlightDown)
+	  +(curInQUp-curInQDown)
+	  +fromInteger(windowSize) < fromInteger(recvQDepth) && user.channel_up() == 1 );
+      
+      //flowControlQ.enq(fromInteger(windowSize));
+      $display("flowControl node %d windowSize=%d curSendBudget", nodeIdx, windowSize, curSendBudget);
+      user.send({seqno,fromInteger(windowSize),1'b1});
+      maxInFlightUp <= maxInFlightUp + fromInteger(windowSize);
+      seqno <= seqno + 1;
+   endrule
+   (* descending_urgency = "sendPacket,sendFlowControl" *)
+   rule sendPacket if ( curSendBudget > 0 && user.channel_up() == 1 );
+      sendQ.deq;
+      $display("sendPacket.user node %d link %d %h", nodeIdx, linkIdx, sendQ.first);
+      user.send({sendQ.first, 1'b0});
+      curSendBudgetDown <= curSendBudgetDown + 1;
+   endrule
 
 	rule recvPacket;
 		let d <- user.receive;
@@ -120,6 +126,7 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Clock
 		Bit#(1) control = d[0];
 		AuroraFC data = truncate(d>>1);
 
+	   $display("recvPacket node %d link %d d=%h control=%d budgetup %h %h down %h", nodeIdx, linkIdx, d, control, curSendBudgetUp, curSendBudgetUp + truncate(data), curSendBudgetDown);
 		if ( control == 1 ) begin
 			curSendBudgetUp <= curSendBudgetUp + truncate(data);
 		end else begin
@@ -179,6 +186,7 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Clock
 		end else begin
 			inPacketOffset <= 0;
 			Payload t = inPacketBuffer.payload | (zeroExtend(d) <<(headInternalOffset+valueOf(AuroraFCWidth)));
+			    $display("inpacketQ.enq node=%d link=%d", nodeIdx, linkIdx);
 			inPacketQ.enq(AuroraPacket{src: inPacketBuffer.src, dst:inPacketBuffer.dst, ptype:inPacketBuffer.ptype, payload: t});
 		end
 	endrule
@@ -188,6 +196,7 @@ module mkAuroraExtFlowControl#(AuroraControllerIfc#(AuroraPhysWidth) user, Clock
 	endmethod
 	method ActionValue#(AuroraPacket) receive;
 		inPacketQ.deq;
+	   $display("inpacketQ.first node=%d link=%d %h", nodeIdx, linkIdx, inPacketQ.first);
 		return inPacketQ.first;
 	endmethod
 	method Bit#(1) channel_up = user.channel_up;
@@ -246,16 +255,17 @@ module mkAuroraExt#(Clock gtx_clk_p, Clock gtx_clk_n, Clock clk50) (AuroraExtIfc
 	auroraRst[2] = auroraExtImport.aurora_rst2;
 	auroraRst[3] = auroraExtImport.aurora_rst3;
 	
-	auroraExt[0] <- mkAuroraExtFlowControl(auroraExtImport.user0
+   Reg#(HeaderField) nodeIdx <- mkReg(0);
+	auroraExt[0] <- mkAuroraExtFlowControl(auroraExtImport.user0, nodeIdx, 0
 		, defaultClock, defaultReset
 		, clocked_by auroraClk[0], reset_by auroraRst[0] );
-	auroraExt[1] <- mkAuroraExtFlowControl(auroraExtImport.user1
+	auroraExt[1] <- mkAuroraExtFlowControl(auroraExtImport.user1, nodeIdx, 1
 		, defaultClock, defaultReset
 		, clocked_by auroraClk[1], reset_by auroraRst[1] );
-	auroraExt[2] <- mkAuroraExtFlowControl(auroraExtImport.user2
+	auroraExt[2] <- mkAuroraExtFlowControl(auroraExtImport.user2, nodeIdx, 2
 		, defaultClock, defaultReset
 		, clocked_by auroraClk[2], reset_by auroraRst[2] );
-	auroraExt[3] <- mkAuroraExtFlowControl(auroraExtImport.user3
+	auroraExt[3] <- mkAuroraExtFlowControl(auroraExtImport.user3, nodeIdx, 3
 		, defaultClock, defaultReset
 		, clocked_by auroraClk[3], reset_by auroraRst[3] );
 
@@ -285,6 +295,7 @@ module mkAuroraExt#(Clock gtx_clk_p, Clock gtx_clk_n, Clock clk50) (AuroraExtIfc
 	interface user = userifcs;
 	interface Vector aurora = auroraPins;
 	method Action setNodeIdx(HeaderField idx); 
+	   nodeIdx <= idx;
 		`ifdef BSIM
 		auroraExtImport.setNodeIdx(zeroExtend(idx));
 		`endif
