@@ -146,7 +146,7 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
       method Action start(Bit#(32) dummy);
 	 started <= True;
       endmethod
-      method Action setNodeIdx(Bit#(32) nodeId);
+      method Action setNodeId(Bit#(32) nodeId);
 	 myNetIdx <= truncate(netid);
 	 //auroraExtArbiter.setMyId(truncate(netid));
 	 auroraExt119.setNodeIdx(truncate(nodeId));
