@@ -38,29 +38,7 @@ int main(int argc, const char **argv)
 {
 	char hostname[32];
 	gethostname(hostname,32);
-
-	//FIXME "lightning" is evaluated to 0,
-	// so when bdbm00 is returned to the cluster,
-	// code needs to be modified
-	/*
-	if ( strstr(hostname, "bdbm") == NULL 
-		&& strstr(hostname, "umma") == NULL
-		&& strstr(hostname, "lightning") == NULL ) {
-		
-		fprintf(stderr, "ERROR: hostname should be bdbm[idx] or lightning\n");
-		return 1;
-	}
-	*/
-
-
-	unsigned long myid = strtoul(hostname+strlen("bdbm"), NULL, 0);
-	if ( strstr(hostname, "bdbm") == NULL 
-		&& strstr(hostname, "umma") == NULL
-		&& strstr(hostname, "lightning") == NULL ) {
-			
-			myid = 0;
-
-	}
+	unsigned long myid = 0;
 	char* userhostid = getenv("BDBM_ID");
 	if ( userhostid != NULL ) {
 	  myid = strtoul(userhostid, NULL, 0);
