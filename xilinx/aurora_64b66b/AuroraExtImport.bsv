@@ -32,13 +32,6 @@ import SimLink::*;
 
 import AuroraCommon::*;
 
-
-import "BDPI" function Bool bdpiSendAvailable(Bit#(8) nidx, Bit#(8) pidx);
-import "BDPI" function Bool bdpiRecvAvailable(Bit#(8) nidx, Bit#(8) pidx);
-import "BDPI" function Bit#(64) bdpiRead(Bit#(8) nidx, Bit#(8) pidx);
-import "BDPI" function Bool bdpiWrite(Bit#(8) nidx, Bit#(8) pidx, Bit#(64) data);
-
-
 typedef 4 AuroraExtPerQuad;
 
 typedef 64 AuroraPhysWidth;
@@ -339,7 +332,7 @@ module mkAuroraExtImport_bsim#(Clock gtx_clk_in, Clock init_clk, Reset init_rst_
 		    return 0;
 		 endmethod
 
-		 method Action send(Bit#(64) data);// if ( bdpiSendAvailable(nodeIdx, 0) );
+		 method Action send(Bit#(64) data);
 		    //$display("aurora.send port %d data %h", i, data);
 		    txQ[i].enq(data);
 		 endmethod
