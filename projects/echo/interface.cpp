@@ -38,8 +38,8 @@ size_t walloc_sz = wnumBytes*sizeof(unsigned char);
 
 const char* log_prefix = "\t\tLOG: ";
 
-GeneralRequestProxy *device = 0;
-GeneralIndication *deviceIndication = 0;
+GeneralRequestProxy *generalRequest = 0;
+GeneralIndication *generalIndication = 0;
 
 double timespec_diff_sec( timespec start, timespec end ) {
 	double t = end.tv_sec - start.tv_sec;
@@ -49,8 +49,8 @@ double timespec_diff_sec( timespec start, timespec end ) {
 
 
 void interface_init() {
-	device = new GeneralRequestProxy(GeneralRequestPortal);
-	deviceIndication = new GeneralIndication(GeneralIndicationPortal);
+	generalRequest = new GeneralRequestProxy(GeneralRequestPortal);
+	generalIndication = new GeneralIndication(GeneralIndicationPortal);
 	
 	pthread_mutex_init(&flashReqMutex, NULL);
 	pthread_cond_init(&flashReqCond, NULL);
@@ -61,20 +61,20 @@ void setAuroraRouting2(int myid, int src, int dst, int port1, int port2) {
 
 	for ( int i = 0; i < 8; i ++ ) {
 		if ( i % 2 == 0 ) { 
-			device->setAuroraExtRoutingTable(dst,port1, i);
+			generalRequest->setAuroraExtRoutingTable(dst,port1, i);
 		} else {
-			device->setAuroraExtRoutingTable(dst,port2, i);
+			generalRequest->setAuroraExtRoutingTable(dst,port2, i);
 		}
 	}
 }
 
 void auroraifc_start(int myid) {
-	device->setNetId(myid);
-	device->auroraStatus(0);
+	generalRequest->setNodeId(myid);
+	generalRequest->auroraStatus(0);
 
 	//This is not strictly required
 	for ( int i = 0; i < 8; i++ ) 
-		device->setAuroraExtRoutingTable(myid,0,i);
+		generalRequest->setAuroraExtRoutingTable(myid,0,i);
 
 	// This is set up such that all nodes can one day 
 	// read the same routing file and apply it
@@ -99,18 +99,18 @@ void auroraifc_start(int myid) {
 
 
 void generalifc_start(int datasource) {
-	device->start(datasource);
+	generalRequest->start(datasource);
 }
 
 void generalifc_readRemotePage(int myid) {
   int dstid = ~myid;
-  device->auroraStatus(0);
-  device->sendData(1, dstid, 0);
+  generalRequest->auroraStatus(0);
+  generalRequest->sendData(1, dstid, 0);
 }
 void generalifc_latencyReport() {
 	for ( int i = 0; i < 16; i++ ) {
-		float tot = deviceIndication->timediff[i];
-		float avg = tot/deviceIndication->timediffcnt[i];
+		float tot = generalIndication->timediff[i];
+		float avg = tot/generalIndication->timediffcnt[i];
 		printf( "%d: %f\n",i,avg );
 	}
 }

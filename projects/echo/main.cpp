@@ -36,8 +36,6 @@
 
 int main(int argc, const char **argv)
 {
-	char hostname[32];
-	gethostname(hostname,32);
 	unsigned long myid = 0;
 	char* userhostid = getenv("BDBM_ID");
 	if ( userhostid != NULL ) {
@@ -66,7 +64,7 @@ int main(int argc, const char **argv)
 	  generalifc_readRemotePage(myid);
 	  sleep(1);
 	}
-	generalifc_latencyReport();
+	sleep(20);
 
 	exit(0);
 }

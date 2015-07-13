@@ -43,7 +43,7 @@ import StreamingSerDes::*;
 
 interface GeneralRequest;
    method Action setAuroraExtRoutingTable(Bit#(32) node, Bit#(32) portidx, Bit#(32) portsel);
-   method Action setNetId(Bit#(32) netid);
+   method Action setNodeId(Bit#(32) nodeId);
    method Action start(Bit#(32) dummy);
 
    method Action sendData(Bit#(32) count, Bit#(5) target, Bit#(32) stride);
@@ -103,23 +103,16 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
    endrule
 
    Vector#(4, Reg#(Bit#(32))) sendDataCount <- replicateM(mkReg(0));
-   Vector#(4, Reg#(Bit#(32))) sendDataCount2 <- replicateM(mkReg(0));
    Reg#(HeaderField) sendDataTarget <- mkReg(0);
-   for (Integer link = 0; link < 4; link = link + 1)
-      rule sendAuroraData2 if (sendDataCount2[link] > 0 );
-	 sendDataCount2[link] <= sendDataCount2[link] - 1;
-	 let ptype = 0;
-	 if (myNetIdx == 1)
-	    ptype = 3;
-	 auroraExt119.user[link].send(AuroraPacket { payload: zeroExtend({sendDataCount2[link],8'hcc}), dst: sendDataTarget, src: myNetIdx, ptype: fromInteger(link)});
-      endrule
    for (Integer link = 0; link < 4; link = link + 1)
       rule sendAuroraData if(sendDataCount[link] > 0 );
 	 sendDataCount[link] <= sendDataCount[link] - 1;
 	 let ptype = 0;
 	 if (myNetIdx == 1)
 	    ptype = 2;
-	 auroraExt119.user[link].send(AuroraPacket { payload: zeroExtend({sendDataCount[link],8'hbb}), dst: sendDataTarget, src: myNetIdx, ptype: fromInteger(link)});
+	 Payload data = zeroExtend({sendDataCount[link],8'hbb});
+	 $display("sendAuroraData link=%d data=%h", link, data);
+	 auroraExt119.user[link].send(AuroraPacket { payload: data, dst: sendDataTarget, src: myNetIdx, ptype: fromInteger(link)});
       endrule
 
    for (Integer link = 0; link < 4; link = link + 1) begin
@@ -131,6 +124,7 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
 	 let data = rst.payload;
 	 let src = rst.src;
 
+	 $display("recvAuroraData link=%d data=%h", link, data);
 	 indication.receive(truncate(data), extend(src));
       endrule
    end
@@ -143,7 +137,6 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
       method Action sendData(Bit#(32) count, Bit#(5) target, Bit#(32) stride);
 	 for (Integer link = 0; link < 4; link = link + 1) begin
 	    sendDataCount[link] <= count;
-	    sendDataCount2[link] <= count;
 	 end
 	 sendDataTarget <= target;
       endmethod
@@ -153,10 +146,10 @@ module mkMain#(GeneralIndication indication, Clock clk250, Reset rst250)(MainIfc
       method Action start(Bit#(32) dummy);
 	 started <= True;
       endmethod
-      method Action setNetId(Bit#(32) netid);
+      method Action setNodeIdx(Bit#(32) nodeId);
 	 myNetIdx <= truncate(netid);
 	 //auroraExtArbiter.setMyId(truncate(netid));
-	 auroraExt119.setNodeIdx(truncate(netid));
+	 auroraExt119.setNodeIdx(truncate(nodeId));
       endmethod
       method Action auroraStatus(Bit#(32) dummy);
 	 indication.auroraStatus({
