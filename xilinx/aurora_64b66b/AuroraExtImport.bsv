@@ -26,6 +26,9 @@ import DefaultValue :: *;
 import Xilinx :: *;
 import XilinxCells :: *;
 //import ConnectalXilinxCells::*;
+import GetPut::*;
+import Pipe::*;
+import SimLink::*;
 
 import AuroraCommon::*;
 
@@ -303,34 +306,29 @@ module mkAuroraExtImport_bsim#(Clock gtx_clk_in, Clock init_clk, Reset init_rst_
 
 	Reg#(Bit#(8)) nodeIdx <- mkReg(255);
 	
-   Vector#(4, FIFO#(Bit#(AuroraPhysWidth))) writeQ <- replicateM(mkFIFO);
-   Vector#(4, FIFO#(Bit#(AuroraPhysWidth))) mirrorQ <- replicateM(mkFIFO);
-
+   Vector#(4, FIFO#(Bit#(AuroraPhysWidth))) txQ <- replicateM(mkFIFO);
+   Vector#(4, FIFO#(Bit#(AuroraPhysWidth))) rxQ <- replicateM(mkFIFO);
+   Vector#(4, SimLink#(AuroraPhysWidth)) link <- replicateM(mkSimLink);
    for (Integer i = 0; i < 4; i = i + 1) begin
-	rule m0 if ( bdpiRecvAvailable(nodeIdx, fromInteger(i) ));
-		let d = bdpiRead(nodeIdx, fromInteger(i));
-		mirrorQ[i].enq(d);
-	        $display( "\t\tread %x 0", d, i );
-	endrule
-	rule w0 if ( bdpiSendAvailable(nodeIdx, fromInteger(i)));
-		let d = writeQ[i].first;
-		if ( bdpiWrite(nodeIdx, fromInteger(i), d) ) begin
-			$display( "\t\twrite %x %d", d, i );
-			writeQ[i].deq;
-		end
-	endrule
+      rule m0 if (link[i].linkUp());
+	 let d <- toGet(link[i].rx).get();
+	 rxQ[i].enq(d);
+	 //$display( "\t\t rx port=%d %x", i, d );
+      endrule
+      rule w0 if ( link[i].tx.notFull() && link[i].linkUp() );
+	 let d = txQ[i].first;
+	 txQ[i].deq;
+	 link[i].tx.enq(d);
+	 //$display( "\t\t tx port=%d %x", i, d );
+      endrule
    end
 	
    function AuroraControllerIfc#(AuroraPhysWidth) auroraController(Integer i);
       return (interface AuroraControllerIfc;
 		 interface Reset aurora_rst_n = rst;
 
-		 method Bit#(1) channel_up;
-		    return 1;
-		 endmethod
-		 method Bit#(1) lane_up;
-		    return 1;
-		 endmethod
+		 method Bit#(1) channel_up = pack(link[i].linkUp());
+		 method Bit#(1) lane_up = pack(link[i].linkUp());
 		 method Bit#(1) hard_err;
 		    return 0;
 		 endmethod
@@ -342,13 +340,13 @@ module mkAuroraExtImport_bsim#(Clock gtx_clk_in, Clock init_clk, Reset init_rst_
 		 endmethod
 
 		 method Action send(Bit#(64) data);// if ( bdpiSendAvailable(nodeIdx, 0) );
-		    $display("aurora.send port %d data %h", i, data);
-		    writeQ[i].enq(data);
+		    //$display("aurora.send port %d data %h", i, data);
+		    txQ[i].enq(data);
 		 endmethod
 		 method ActionValue#(Bit#(64)) receive;
-		    let data = mirrorQ[i].first;
-		    mirrorQ[i].deq;
-		    $display("aurora.receive port %d data %h", i, data);
+		    let data = rxQ[i].first;
+		    rxQ[i].deq;
+		    //$display("aurora.receive port %d data %h", i, data);
 		    return data;
 		 endmethod
 	 endinterface);
@@ -372,6 +370,18 @@ module mkAuroraExtImport_bsim#(Clock gtx_clk_in, Clock init_clk, Reset init_rst_
 	method Action setNodeIdx(Bit#(8) idx);
 		$display( "aurora node idx set to %d", idx);
 		nodeIdx <= idx;
+	   for (Integer i = 0; i < 4; i = i + 1) begin
+	      Bit#(16) portdelta = 0;
+	      if (i == 1)
+		 portdelta = 1;
+	      else if (i == 2)
+		 portdelta = -1; // downlink to port 1
+	      else if (i == 3)
+		 portdelta = -2; // downlink to port 0
+	      Bit#(16) linknumber = extend(idx)*2 + portdelta;
+	      Bool listening = idx[0] == 1;
+	      link[i].start(extend(linknumber), listening);
+	   end
 	endmethod
 
 endmodule
