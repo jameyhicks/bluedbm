@@ -46,7 +46,8 @@ class GeneralIndication : public GeneralIndicationWrapper
 public:
 	uint32_t timediff[16];
 	uint32_t timediffcnt[16];
-  GeneralIndication(unsigned int id) : GeneralIndicationWrapper(id){
+	int nodeId;
+ GeneralIndication(unsigned int id, int nodeId) : GeneralIndicationWrapper(id), nodeId(nodeId) {
   	for ( int i = 0; i < 16; i++ ) {
 		timediff[i] = 0;
 		timediffcnt[i] = 0;
@@ -88,11 +89,12 @@ public:
   }
   virtual void auroraStatus(uint32_t linkUp, uint32_t softErrorCount0, uint32_t softErrorCount1, uint32_t softErrorCount2, uint32_t softErrorCount3) {
       fprintf(stderr,
-	      "aurora link status 0 %s 1 %s 2 %s 3 %s error counts %d %d %d %d\n",
-	      (linkUp & 1) ? "up" : "down",
-	      (linkUp & 2) ? "up" : "down",
-	      (linkUp & 4) ? "up" : "down",
-	      (linkUp & 8) ? "up" : "down",
+	      "node %d aurora link status 0 %s 1 %s 2 %s 3 %s error counts %d %d %d %d\n",
+	      nodeId,
+	      (linkUp & 1) ? "up  " : "down",
+	      (linkUp & 2) ? "up  " : "down",
+	      (linkUp & 4) ? "up  " : "down",
+	      (linkUp & 8) ? "up  " : "down",
 	      softErrorCount0,
 	      softErrorCount1,
 	      softErrorCount2,
@@ -103,7 +105,7 @@ public:
 
 ///////////// General Interface Functions //////////////////////
 
-void interface_init();
+void interface_init(int nodeId);
 void interface_alloc(DmaManager* dma);
 void generalifc_start(int datasource);
 void generalifc_readRemotePage(int myid);

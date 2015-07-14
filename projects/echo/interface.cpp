@@ -48,9 +48,9 @@ double timespec_diff_sec( timespec start, timespec end ) {
 }
 
 
-void interface_init() {
+void interface_init(int nodeId) {
 	generalRequest = new GeneralRequestProxy(GeneralRequestPortal);
-	generalIndication = new GeneralIndication(GeneralIndicationPortal);
+	generalIndication = new GeneralIndication(GeneralIndicationPortal, nodeId);
 	
 	pthread_mutex_init(&flashReqMutex, NULL);
 	pthread_cond_init(&flashReqCond, NULL);

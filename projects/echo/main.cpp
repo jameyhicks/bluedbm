@@ -34,19 +34,20 @@
 #include "connectal.h"
 #include "interface.h"
 
+int nodeId = 0;
+
 int main(int argc, const char **argv)
 {
-	unsigned long myid = 0;
-	char* userhostid = getenv("BDBM_ID");
-	if ( userhostid != NULL ) {
-	  myid = strtoul(userhostid, NULL, 0);
+	char* bdbm_id = getenv("BDBM_ID");
+	if ( bdbm_id != NULL ) {
+	  nodeId = strtoul(bdbm_id, NULL, 0);
 	}
 
-	interface_init();
+	interface_init(nodeId);
 	printf( "Done initializing hw interfaces\n" ); fflush(stdout);
 
-	printf( "initializing aurora with node id %ld\n", myid ); fflush(stdout);
-	auroraifc_start(myid);
+	printf( "initializing aurora with node id %d\n", nodeId ); fflush(stdout);
+	auroraifc_start(nodeId);
 
 	/////////////////////////////////////////////////////////
 
@@ -61,7 +62,7 @@ int main(int argc, const char **argv)
 	//auroraifc_sendTest();
 
 	for (int i = 0; i < 10; i++) {
-	  generalifc_readRemotePage(myid);
+	  generalifc_readRemotePage(nodeId);
 	  sleep(1);
 	}
 	sleep(20);
