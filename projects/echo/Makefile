@@ -38,7 +38,7 @@ prebuild:: aurora_extra
 aurora_extra: aurora-ext.24 aurora-ext.25 aurora-ext.26 aurora-ext.27
 	find $(CONNECTALDIR)/out/$(BOARD)/ -name "aurora_64b66b_X1Y??_wrapper.v" -exec sed -i "s/GT0_txdiffctrl_in[ \t]\+([4'b10]\+),/GT0_txdiffctrl_in (4'b1100),/g" '{}' \;
 
-aurora-ext.%:
+aurora-ext.%: gentarget
 	echo Building aurora-ext $(*)
 	(cd $(BOARD); mkdir -p Cache; AURORA_LOCS=$(*) BUILDCACHE_CACHEDIR=Cache $(BUILDCACHE) vivado -notrace -mode batch -source $(CORE_SCRIPTS)/synth-aurora-ext.tcl)
 else
