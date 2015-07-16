@@ -30,8 +30,8 @@ CONNECTALFLAGS += \
 	--xci $(CONNECTALDIR)/out/$(BOARD)/aurora_64b66b_X1Y25/aurora_64b66b_X1Y25.xci \
 	--xci $(CONNECTALDIR)/out/$(BOARD)/aurora_64b66b_X1Y26/aurora_64b66b_X1Y26.xci \
 	--xci $(CONNECTALDIR)/out/$(BOARD)/aurora_64b66b_X1Y27/aurora_64b66b_X1Y27.xci \
-	-C ../../misc/bluedbm.xdc \
-	-C ../../xilinx/aurora_64b66b/aurora_64b66b_exdes_119.xdc
+	-C ../../xilinx/aurora_64b66b/aurora_64b66b_exdes_119.xdc \
+	-C ../../misc/bluedbm.xdc
 
 prebuild:: aurora_extra
 
