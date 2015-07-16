@@ -40,7 +40,7 @@ aurora_extra: aurora-ext.24 aurora-ext.25 aurora-ext.26 aurora-ext.27
 
 aurora-ext.%:
 	echo Building aurora-ext $(*)
-	(cd $(BOARD); mkdir -p Cache; AURORA_LOCS=$(*) BUILDCACHE_CACHEDIR=Cache $(BUILDCACHE) vivado -mode batch -source $(CORE_SCRIPTS)/synth-aurora-ext.tcl)
+	(cd $(BOARD); mkdir -p Cache; AURORA_LOCS=$(*) BUILDCACHE_CACHEDIR=Cache $(BUILDCACHE) vivado -notrace -mode batch -source $(CORE_SCRIPTS)/synth-aurora-ext.tcl)
 else
 CONNECTALFLAGS += \
 	--bsimsource ../../xilinx/aurora_64b66b/bdpi.cpp
