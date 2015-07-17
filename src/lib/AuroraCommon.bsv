@@ -60,7 +60,7 @@ interface AuroraExtImportIfc#(numeric type lanes);
 	(* prefix = "" *)
 	interface AuroraControllerIfc#(64) user3;
 
-	`ifdef BSIM
+	`ifdef SIMULATION
 	method Action setNodeIdx(Bit#(8) idx);
 	`endif
 endinterface
@@ -108,7 +108,7 @@ endinterface
 
 (* synthesize *)
 module mkGtxClockImport (GtxClockImportIfc);
-`ifndef BSIM
+`ifndef SIMULATION
 	B2C i_gtx_clk_p <- mkB2C();
 	B2C i_gtx_clk_n <- mkB2C();
 
