@@ -199,7 +199,7 @@ endinterface
 module mkAuroraExt#(Clock gtx_clk_p, Clock gtx_clk_n, Clock clk50) (AuroraExtIfc);
 	Reset defaultReset <- exposeCurrentReset;
 	Clock defaultClock <- exposeCurrentClock;
-`ifndef BSIM
+`ifndef SIMULATION
 	//ClockDividerIfc auroraExtClockDiv5 <- mkDCMClockDivider(5, 4, clocked_by clk250);
 	//Clock clk50 = auroraExtClockDiv5.slowClock;
 	Reset rst50 <- mkAsyncReset(2, defaultReset, clk50);
@@ -269,14 +269,14 @@ module mkAuroraExt#(Clock gtx_clk_p, Clock gtx_clk_n, Clock clk50) (AuroraExtIfc
 	interface Vector aurora = auroraPins;
 	method Action setNodeIdx(HeaderField idx); 
 	   nodeIdx <= idx;
-		`ifdef BSIM
+		`ifdef SIMULATION
 		auroraExtImport.setNodeIdx(zeroExtend(idx));
 		`endif
 	endmethod
 endmodule
 
 // ifndef is necessary because AuroraExtImportIfc is different for bsim
-`ifdef BSIM 
+`ifdef SIMULATION 
 module mkAuroraExtImport_bsim#(Clock gtx_clk_in, Clock init_clk, Reset init_rst_n, Reset gt_rst_n) (AuroraExtImportIfc#(AuroraExtPerQuad));
 	Clock clk <- exposeCurrentClock;
 	Reset rst <- exposeCurrentReset;
@@ -365,7 +365,7 @@ endmodule
 `endif
 
 // ifndef is necessary because AuroraExtImportIfc is different for bsim
-`ifndef BSIM 
+`ifndef SIMULATION
 import "BVI" aurora_64b66b_exdes =
 module mkAuroraExtImport#(Clock gtx_clk_in, Clock init_clk, Reset init_rst_n, Reset gt_rst_n) (AuroraExtImportIfc#(AuroraExtPerQuad));
 	default_clock no_clock;
