@@ -5,6 +5,7 @@ INTERFACES = GeneralRequest GeneralIndication
 
 NUMBER_OF_MASTERS=0
 PIN_TYPE=AuroraExtPins
+PIN_TYPE_INCLUDE=AuroraExtImport
 DATA_BUS_WIDTH=128
 
 BSVFILES = Main.bsv Top.bsv \
