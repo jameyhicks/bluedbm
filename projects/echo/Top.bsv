@@ -60,7 +60,7 @@ typedef enum {GeneralIndicationPortal, GeneralRequestPortal,
    } IfcNames deriving (Eq,Bits);
 
 (* synthesize *)
-module mkConnectalTop#(Clock clk250, Reset rst250) (ConnectalTop#(PhysAddrWidth,DataBusWidth,AuroraExtPins,NumberOfMasters));
+module mkConnectalTop#(Clock clk250, Reset rst250) (ConnectalTop);
 
    Clock curClk <- exposeCurrentClock;
    Reset curRst <- exposeCurrentReset;
