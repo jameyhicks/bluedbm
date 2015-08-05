@@ -345,8 +345,8 @@ module mkAuroraExtImport_bsim#(Clock gtx_clk_in, Clock init_clk, Reset init_rst_
 	interface AuroraControllerIfc user2 = auroraController(2);
 	interface AuroraControllerIfc user3 = auroraController(3);
 	method Action setNodeIdx(Bit#(8) idx);
-		$display( "aurora node idx set to %d", idx);
-		nodeIdx <= idx;
+	   //$display( "aurora node idx set to %d", idx);
+	   nodeIdx <= idx;
 	   for (Integer i = 0; i < 4; i = i + 1) begin
 	      Bit#(16) portdelta = 0;
 	      if (i == 1)
