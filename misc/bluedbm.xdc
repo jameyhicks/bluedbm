@@ -30,3 +30,6 @@ set_false_path -from [get_clocks clkgen_pll_CLKOUT0] -to [get_clocks userclk2]
 
 set_false_path -from [get_clocks TS_user_clk_i_all] -to [get_clocks clkgen_pll_CLKOUT1*]
 set_false_path -from [get_clocks clkgen_pll_CLKOUT1*] -to [get_clocks TS_user_clk_i_all]
+
+set_false_path -from [get_clocks clkgen_pll_CLKOUT1*] -to [get_clocks clkgen_pll_CLKOUT0*]
+set_false_path -from [get_clocks clkgen_pll_CLKOUT0*] -to [get_clocks clkgen_pll_CLKOUT1*]
